@@ -4,7 +4,7 @@ import "@openzeppelin/contracts@v4.9.0/access/AccessControl.sol";
 import "./interfaces/IMenu.sol";
 import "./interfaces/IStaff.sol";
 
-contract StaffManagement is AccessControl {
+contract Management is AccessControl {
     bytes32 public ROLE_ADMIN = keccak256("ROLE_ADMIN");
     bytes32 public ROLE_STAFF = keccak256("ROLE_STAFF");
     mapping(address => Staff) public mAddToStaff;
