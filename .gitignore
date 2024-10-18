@@ -1,3 +1,9 @@
-.deps/
-artifacts/
-*.json
+.deps
+remix-compiler.config.js
+.prettierrc.json
+.states
+artifacts
+cache
+out
+node_modules
+lib
