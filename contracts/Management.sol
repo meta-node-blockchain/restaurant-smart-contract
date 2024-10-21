@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity 0.8.19;
 import "@openzeppelin/contracts@v4.9.0/access/AccessControl.sol";
+import "@openzeppelin/contracts@v4.9.0/token/ERC20/IERC20.sol";
+
 import "./interfaces/IMenu.sol";
 import "./interfaces/IStaff.sol";
 
@@ -17,9 +19,9 @@ contract Management is AccessControl {
     mapping(string => Dish[]) public mCodeCatToDishes;
     mapping(string => Discount) public mCodeToDiscount;
     Discount[] public discounts;
-
     constructor()payable{
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ROLE_ADMIN, msg.sender);
     }
     //staff management
 
@@ -87,10 +89,10 @@ contract Management is AccessControl {
         mNumberToTable[_number].numPeople = _numPeople;
         mNumberToTable[_number].active = _active;
     }
-    function GetAllTables()external view onlyRole(ROLE_ADMIN) returns(Table[] memory){
+    function GetAllTables()external view returns(Table[] memory){
         return tables;
     }
-    function GetTable(uint _number)external view onlyRole(ROLE_ADMIN) returns(Table memory){
+    function GetTable(uint _number)external view returns(Table memory){
         return mNumberToTable[_number];
     }
     //category management
@@ -197,6 +199,7 @@ contract Management is AccessControl {
         require(bytes(discount.code).length >0,"code of discount can not be empty");
         require(bytes(mCodeToDiscount[discount.code].code).length == 0,"code of discount existed");
         mCodeToDiscount[discount.code] = discount;
+        mCodeToDiscount[discount.code].updatedAt = block.timestamp;
         discounts.push(discount);
     }
     function UpdateDiscount(
@@ -208,11 +211,15 @@ contract Management is AccessControl {
         uint _to,
         bool _active,
         string memory _imgURL,
-        uint _amountMax,
-        uint _amountUsed  
+        uint _amountMax
     )external onlyRole(ROLE_ADMIN){
         require(bytes(_code).length >0,"code of discount can not be empty");
         require(bytes(mCodeToDiscount[_code].code).length > 0,"can not find any discount");
+        require(_amountMax > 0 && _discountPercent > 0 ,"maximum number and percent of discount can be zero" );
+        require(_discountPercent <= 100, "discount percent need to be less than 100");
+        require(_from >= block.timestamp && _to > block.timestamp,"time is not valid");
+        require(_amountMax >= mCodeToDiscount[_code].amountUsed , 
+                "number of maximum can not be less than number discount used");
         mCodeToDiscount[_code].name = _name;
         mCodeToDiscount[_code].discountPercent = _discountPercent;
         mCodeToDiscount[_code].desc = _desc;
@@ -221,7 +228,6 @@ contract Management is AccessControl {
         mCodeToDiscount[_code].active = _active;
         mCodeToDiscount[_code].imgURL = _imgURL;
         mCodeToDiscount[_code].amountMax = _amountMax;
-        mCodeToDiscount[_code].amountUsed = _amountUsed;
     }
     function GetDiscount(
         string memory _code

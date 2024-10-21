@@ -8,11 +8,8 @@ enum TABLE_STATUS {
 enum PAYMENT_STATUS {
     CREATED,
     PAID,
-    ABORT
-}
-enum METHOD {
-    VISA,
-    TOKEN
+    ABORT,
+    REFUNDED
 }
 enum COURSE_STATUS {
     ORDERD,
@@ -48,14 +45,14 @@ struct Table {
     bool active;
 }
 struct Course {
+    uint id;
     Dish dish;
     string note;
     COURSE_STATUS status;
 }
 struct Order {
-    uint Id;
-    Course[] courses;
-    uint TableNum;
+    uint id;
+    uint tableNum;
     uint createdAt;
 }
 struct Discount{
@@ -68,20 +65,22 @@ struct Discount{
     bool active;
     string imgURL;
     uint amountMax;
-    uint amountUsed;   
+    uint amountUsed;
+    uint updatedAt;   
 }
 struct Payment {
     bytes32 id;
     uint tableNum;
-    Order[] orders;
+    uint[] orderIds;
     uint foodCharge;
     uint tax;
     uint tip;
     uint discountAmount;
-    Discount discountInfo;
+    string discountCode;
     address customer;
     PAYMENT_STATUS status;
     uint createdAt;
-    METHOD method;
+    string method;
+    bool comfirmed;
     string reasonComfirm;
 }
