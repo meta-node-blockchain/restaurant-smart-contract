@@ -28,7 +28,7 @@ unit-test:
 	clear && forge test -vvv
 
 unit-res:
-	clear && forge test --match-path test/restaurant.t.sol --via-ir -vvv
+	clear && forge test --match-path test/res.t.sol --via-ir -vvv
 
 
 

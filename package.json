@@ -1,11 +1,26 @@
 {
   "name": "restaurant-smart-contract",
   "version": "1.0.0",
-  "description": "",
+  "description": "**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meta-node-blockchain/restaurant-smart-contract.git"
+  },
+  "bugs": {
+    "url": "https://github.com/meta-node-blockchain/restaurant-smart-contract/issues"
+  },
+  "homepage": "https://github.com/meta-node-blockchain/restaurant-smart-contract#readme",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.0"
+  }
 }

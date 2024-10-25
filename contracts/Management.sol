@@ -3,8 +3,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts@v4.9.0/access/AccessControl.sol";
 import "@openzeppelin/contracts@v4.9.0/token/ERC20/IERC20.sol";
 
-import "./interfaces/IMenu.sol";
-import "./interfaces/IStaff.sol";
+import "./interfaces/IRestaurant.sol";
 
 contract Management is AccessControl {
     bytes32 public ROLE_ADMIN = keccak256("ROLE_ADMIN");
@@ -19,6 +18,8 @@ contract Management is AccessControl {
     mapping(string => Dish[]) public mCodeCatToDishes;
     mapping(string => Discount) public mCodeToDiscount;
     Discount[] public discounts;
+    mapping(string => bool) public isCodeExist;
+    mapping(string => uint) public mDishRemain;
     constructor()payable{
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ROLE_ADMIN, msg.sender);
@@ -32,6 +33,9 @@ contract Management is AccessControl {
         require(mAddToStaff[staff.wallet].wallet == address(0),"wallet existed");
         mAddToStaff[staff.wallet] = staff;
         staffs.push(staff);
+    }
+    function isStaff(address account) external view returns (bool) {
+        return hasRole(ROLE_STAFF, account);
     }
     function UpdateStaffInfo(
         address _wallet,
@@ -73,7 +77,6 @@ contract Management is AccessControl {
             numPeople: _numPeople,
             status: TABLE_STATUS.EMPTY,
             paymentId: bytes32(0),
-            orders: new uint[](0),
             active: _active
         });
         mNumberToTable[_number] = table;
@@ -83,11 +86,12 @@ contract Management is AccessControl {
         uint _number,
         uint _numPeople,
         bool _active
-    )external onlyRole(ROLE_ADMIN){
+    )external onlyRole(ROLE_ADMIN) returns(bool){
         require(_number != 0,"Table number can not be 0");
         require(mNumberToTable[_number].number != 0,"this number table does not exist");
         mNumberToTable[_number].numPeople = _numPeople;
         mNumberToTable[_number].active = _active;
+        return true;
     }
     function GetAllTables()external view returns(Table[] memory){
         return tables;
@@ -105,6 +109,7 @@ contract Management is AccessControl {
             bytes(mCodeToCat[category.code].code).length == 0,
             "category code existed"
         );
+        require(!isCodeExist[category.code],"code category exists");
         Category storage cat = mCodeToCat[category.code];
         cat.code= category.code;
         cat.name= category.name;
@@ -113,24 +118,25 @@ contract Management is AccessControl {
         cat.active= category.active;
         cat.imgUrl= category.imgUrl;
         categories.push(cat);
-
+        isCodeExist[cat.code] = true;
     }
     function UpdateCategory(
-        string memory _name,
         string memory _code,
+        string memory _name,
         uint _rank,
         string memory _desc,
         bool _active,
         string memory _imgUrl
-    )external onlyRole(ROLE_ADMIN){
+    )external onlyRole(ROLE_ADMIN) returns(bool){
         require(bytes(_code).length >0,"category code can not be empty");
         require(bytes(mCodeToCat[_code].code).length > 0,"category code does not exist");
-        mCodeToCat[_code].name = _name;
-        mCodeToCat[_code].rank = _rank;
-        mCodeToCat[_code].desc = _desc;
-        mCodeToCat[_code].active = _active;
-        mCodeToCat[_code].imgUrl = _imgUrl;
-
+        Category storage category = mCodeToCat[_code];
+        category.name = _name;
+        category.rank = _rank;
+        category.desc = _desc;
+        category.active = _active;
+        category.imgUrl = _imgUrl;
+        return true;
     }
     function GetCategories()external view returns(Category[] memory){
         return categories;
@@ -146,19 +152,28 @@ contract Management is AccessControl {
 
     function CreateDish(
         string memory _codeCategory,
-        Dish memory dish
+        Dish memory dish,
+        uint _quantity
     )external onlyRole(ROLE_ADMIN){
         require(bytes(_codeCategory).length >0 && bytes(dish.code).length >0,"category code and dish code can not be empty");
         require(
             bytes(mCodeToCat[_codeCategory].code).length > 0,
             "category code does not exist"
         );
-        Category storage category = mCodeToCat[_codeCategory];
+        require(!isCodeExist[dish.code],"code dish exists");
         mCodeToDish[dish.code] = dish;
-        category.dishes.push(dish);
         mCodeCatToDishes[_codeCategory].push(dish);
+        isCodeExist[dish.code] = true;
+        mDishRemain[dish.code] = _quantity;
+    }
+    function IsDishEnough(
+        string memory _dishCode,
+        uint _quantity
+    )external view returns(bool) {
+        return _quantity <= mDishRemain[_dishCode];
     }
     function UpdateDish(
+        string memory _codeCat,
         string memory _codeDish,
         string memory _nameCategory,
         string memory _name,
@@ -167,19 +182,36 @@ contract Management is AccessControl {
         bool _available,
         bool _active,
         string memory _imgUrl
-    )external onlyRole(ROLE_ADMIN){
-        require(bytes(_codeDish).length >0,"category code can not be empty");
+    )external onlyRole(ROLE_ADMIN) returns(bool){
+        require(bytes(_codeDish).length >0 && bytes(_codeCat).length >0,"dish code and category code can not be empty");
         require(
             bytes(mCodeToDish[_codeDish].code).length > 0,
-            "does not find dish"
+            "can not find dish"
         );
-        mCodeToDish[_codeDish].nameCategory = _nameCategory;
-        mCodeToDish[_codeDish].name = _name;
-        mCodeToDish[_codeDish].des = _des;
-        mCodeToDish[_codeDish].price = _price;
-        mCodeToDish[_codeDish].available = _available;
-        mCodeToDish[_codeDish].active = _active;
-        mCodeToDish[_codeDish].imgUrl = _imgUrl;
+        Dish storage dish = mCodeToDish[_codeDish];
+        dish.nameCategory = _nameCategory;
+        dish.name = _name;
+        dish.des = _des;
+        dish.price = _price;
+        dish.available = _available;
+        dish.active = _active;
+        dish.imgUrl = _imgUrl;
+        _updateDishFromCat(_codeCat,_codeDish,_available);
+        return true;
+    }
+    function _updateDishFromCat(
+        string memory _codeCat,
+        string memory _codeDish,    
+        bool _available
+    )internal{
+        Dish[] storage dishes = mCodeCatToDishes[_codeCat];
+        require(dishes.length > 0,"no dish in this category found");
+        for(uint i; i < dishes.length; i++){
+            if(keccak256(abi.encodePacked(dishes[i].code)) == keccak256(abi.encodePacked(_codeDish))){
+                dishes[i].available = _available;
+                break;
+            }
+        }
     }
     function GetDish(
         string memory _codeDish
@@ -191,16 +223,45 @@ contract Management is AccessControl {
     )external view returns(Dish[] memory){
         return mCodeCatToDishes[_codeCategory];
     }
+    function UpdateDishStatus(
+        string memory _codeCat,
+        string memory _codeDish,
+        bool _available
+    ) external onlyRole(ROLE_STAFF) returns(bool) {
+        require(bytes(mCodeToDish[_codeDish].code).length != 0,"can not find dish");
+        mCodeToDish[_codeDish].available = _available;
+        _updateDishFromCat(_codeCat,_codeDish,_available);
+        return true;
+    }
     //discount management
 
     function CreateDiscount(
-        Discount memory discount
+        string memory _code,
+        string memory _name,
+        uint _discountPercent,
+        string memory _desc,
+        uint _from,
+        uint _to,
+        bool _active,
+        string memory _imgURL,
+        uint _amountMax
     )external onlyRole(ROLE_ADMIN){
-        require(bytes(discount.code).length >0,"code of discount can not be empty");
-        require(bytes(mCodeToDiscount[discount.code].code).length == 0,"code of discount existed");
-        mCodeToDiscount[discount.code] = discount;
-        mCodeToDiscount[discount.code].updatedAt = block.timestamp;
-        discounts.push(discount);
+        require(bytes(_code).length >0,"code of discount can not be empty");
+        require(bytes(mCodeToDiscount[_code].code).length == 0,"code of discount existed");
+        mCodeToDiscount[_code] = Discount({
+            code: _code ,
+            name: _name ,
+            discountPercent : _discountPercent,
+            desc : _desc,
+            from : _from,
+            to : _to,
+            active : _active,
+            imgURL : _imgURL,
+            amountMax : _amountMax,
+            amountUsed : 0,
+            updatedAt  : block.timestamp
+        });
+        discounts.push(mCodeToDiscount[_code]);
     }
     function UpdateDiscount(
         string memory _code,
@@ -228,6 +289,9 @@ contract Management is AccessControl {
         mCodeToDiscount[_code].active = _active;
         mCodeToDiscount[_code].imgURL = _imgURL;
         mCodeToDiscount[_code].amountMax = _amountMax;
+    }
+    function UpdateDiscountCodeUsed(string memory _code)external{
+        mCodeToDiscount[_code].amountUsed += 1;
     }
     function GetDiscount(
         string memory _code
