@@ -25,7 +25,13 @@ contract Management is AccessControl {
         _grantRole(ROLE_ADMIN, msg.sender);
     }
     //staff management
-
+    modifier onlyAdminAndStaff(){
+        require(
+            hasRole(ROLE_ADMIN, msg.sender) || hasRole(ROLE_STAFF, msg.sender),
+            "Access denied: Requires ADMIN or STAFF role"
+        );
+        _;
+    }
     function CreateStaff(
         Staff memory staff
     )external onlyRole(ROLE_ADMIN){
@@ -55,9 +61,15 @@ contract Management is AccessControl {
         staff.addr = _addr;
         staff.role = _role;
         staff.active = _active;
+        for(uint i;i<staffs.length;i++){
+            if(keccak256(abi.encodePacked(staffs[i].wallet ))== keccak256(abi.encodePacked(_wallet))){
+                staffs[i] = staff;
+            }
+        }
+
         return true;
     }
-    function GetStaffInfo(address _wallet)external view onlyRole(ROLE_ADMIN) returns(Staff memory){
+    function GetStaffInfo(address _wallet)external view onlyAdminAndStaff returns(Staff memory){
         return mAddToStaff[_wallet];
     }
     function GetAllStaffs()external view onlyRole(ROLE_ADMIN) returns(Staff[] memory){
@@ -91,6 +103,12 @@ contract Management is AccessControl {
         require(mNumberToTable[_number].number != 0,"this number table does not exist");
         mNumberToTable[_number].numPeople = _numPeople;
         mNumberToTable[_number].active = _active;
+        for(uint i;i<tables.length;i++){
+            if(keccak256(abi.encodePacked(tables[i].number ))== keccak256(abi.encodePacked(_number))){
+                tables[i] = mNumberToTable[_number];
+            }
+        }
+
         return true;
     }
     function GetAllTables()external view returns(Table[] memory){
@@ -136,6 +154,11 @@ contract Management is AccessControl {
         category.desc = _desc;
         category.active = _active;
         category.imgUrl = _imgUrl;
+        for(uint i;i<categories.length;i++){
+            if(keccak256(abi.encodePacked(categories[i].code ))== keccak256(abi.encodePacked(_code))){
+                categories[i] = category;
+            }
+        }
         return true;
     }
     function GetCategories()external view returns(Category[] memory){
@@ -196,19 +219,19 @@ contract Management is AccessControl {
         dish.available = _available;
         dish.active = _active;
         dish.imgUrl = _imgUrl;
-        _updateDishFromCat(_codeCat,_codeDish,_available);
+        _updateDishFromCat(_codeCat,_codeDish);
         return true;
     }
     function _updateDishFromCat(
         string memory _codeCat,
-        string memory _codeDish,    
-        bool _available
+        string memory _codeDish  
     )internal{
         Dish[] storage dishes = mCodeCatToDishes[_codeCat];
+        Dish storage dish = mCodeToDish[_codeDish];
         require(dishes.length > 0,"no dish in this category found");
         for(uint i; i < dishes.length; i++){
             if(keccak256(abi.encodePacked(dishes[i].code)) == keccak256(abi.encodePacked(_codeDish))){
-                dishes[i].available = _available;
+                dishes[i] = dish;
                 break;
             }
         }
@@ -230,7 +253,7 @@ contract Management is AccessControl {
     ) external onlyRole(ROLE_STAFF) returns(bool) {
         require(bytes(mCodeToDish[_codeDish].code).length != 0,"can not find dish");
         mCodeToDish[_codeDish].available = _available;
-        _updateDishFromCat(_codeCat,_codeDish,_available);
+        _updateDishFromCat(_codeCat,_codeDish);
         return true;
     }
     //discount management
@@ -289,6 +312,12 @@ contract Management is AccessControl {
         mCodeToDiscount[_code].active = _active;
         mCodeToDiscount[_code].imgURL = _imgURL;
         mCodeToDiscount[_code].amountMax = _amountMax;
+        for(uint i;i<discounts.length;i++){
+            if(keccak256(abi.encodePacked(discounts[i].code ))== keccak256(abi.encodePacked(_code))){
+                discounts[i] = mCodeToDiscount[_code];
+            }
+        }
+
     }
     function UpdateDiscountCodeUsed(string memory _code)external{
         mCodeToDiscount[_code].amountUsed += 1;

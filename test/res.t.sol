@@ -17,11 +17,13 @@ contract RestaurantTest is Test {
     address public pos = address(0x11);
     address public Deployer = address(0x1);
     address admin = address(0x2);
-    address staff1 = address(0x3);
-    address staff2 = address(0x4);
+    address staff1 = address(0x83CEC343cFc7A6644C1547277d26D7A621FDc40C);
+    address staff2 = address(0xE730d4572f20A4d701EBb80b8b5aFA99b36d5e49);
     address customer = address(0x5);
     bytes32 public ROLE_ADMIN = keccak256("ROLE_ADMIN");
     bytes32 public ROLE_STAFF = keccak256("ROLE_STAFF");
+    // bytes32 public DEFAULT_ADMIN_ROLE = keccak256("DEFAULT_ADMIN_ROLE");
+
 
     constructor() {
         vm.startPrank(Deployer);
@@ -52,7 +54,34 @@ contract RestaurantTest is Test {
     }
     function SetUpStaff()public{
         vm.startPrank(Deployer);
+        bytes32 role = MANAGEMENT.DEFAULT_ADMIN_ROLE();
+        MANAGEMENT.grantRole(role,admin);
+        vm.startPrank(admin);
         MANAGEMENT.grantRole(ROLE_ADMIN,admin);
+        bytes memory bytesCodeCall = abi.encodeCall(
+        MANAGEMENT.grantRole,
+            (
+               role,
+               0x1c5A2B25f7483Ee4F6DcCbF0663E066D68C68ad7
+            )
+        );
+        console.log("grantRole DEFAULT_ADMIN_ROLE:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
+        bytesCodeCall = abi.encodeCall(
+        MANAGEMENT.grantRole,
+            (
+               ROLE_ADMIN,
+               0xF898fc3d62bFC36f613eb28dE3E20847B4B34d70
+            )
+        );
+        console.log("grantRole ADMIN_ROLE:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
         Staff memory staff = Staff({
             wallet: staff1,
             name:"thuy",
@@ -63,17 +92,49 @@ contract RestaurantTest is Test {
             active: true
         });
         MANAGEMENT.CreateStaff(staff);
+        // bytes memory bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.CreateStaff,
+        //     (
+        //        staff
+        //     )
+        // );
+        // console.log("CreateStaff 1:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
         staff = Staff({
             wallet: staff2,
-            name:"thuy",
-            code:"NV1",
-            phone:"0913088965",
-            addr:"phu nhuan",
+            name:"han",
+            code:"NV2",
+            phone:"0914526387",
+            addr:"quan 7",
             role:ROLE.STAFF,
             active: true
         });
         MANAGEMENT.CreateStaff(staff);
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.CreateStaff,
+        //     (
+        //        staff
+        //     )
+        // );
+        // console.log("CreateStaff 2:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
+
         Staff[] memory staffs = MANAGEMENT.GetAllStaffs();
+        bytesCodeCall = abi.encodeCall(
+            MANAGEMENT.GetAllStaffs,()
+        );
+        console.log("GetAllStaffs:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
+
         assertEq(staffs.length,2,"should be equal");
         Staff memory staffInfo = MANAGEMENT.GetStaffInfo(staff1);
         assertEq(staffInfo.name,"thuy","should be equal");
@@ -84,10 +145,47 @@ contract RestaurantTest is Test {
         assertEq(staffInfo.name,"thanh thuy","should be equal");
         assertEq(staffInfo.phone,"1111111111","should be equal");
         bool kq = MANAGEMENT.isStaff(staff1);
-        assertEq(kq,true,"should be equal");    
-        MANAGEMENT.grantRole(ROLE_STAFF,staff2);
+        assertEq(kq,true,"should be equal"); 
+        staffs = MANAGEMENT.GetAllStaffs();
+        assertEq(staffs[0].name,"thanh thuy","should be equal");
+        assertEq(staffs[0].phone,"1111111111","should be equal");
 
+        MANAGEMENT.grantRole(ROLE_STAFF,staff2);
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.hasRole,
+        //     (
+        //        DEFAULT_ADMIN_ROLE,
+        //        0xF898fc3d62bFC36f613eb28dE3E20847B4B34d70
+        //     )
+        // );
+        // console.log("hasRole DEFAULT_ADMIN_ROLE:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.hasRole,
+        //     (
+        //        ROLE_ADMIN,
+        //        0xF898fc3d62bFC36f613eb28dE3E20847B4B34d70
+        //     )
+        // );
+        // console.log("hasRole ROLE_ADMIN:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
+
+        // bytesCodeCall = abi.encodeCall(
+        // MANAGEMENT.ROLE_ADMIN,()
+        // );
+        // console.log("ROLE_ADMIN:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
         vm.stopPrank();
+        
     }
     function SetUpTable()public {
         vm.startPrank(admin);
@@ -103,6 +201,8 @@ contract RestaurantTest is Test {
         MANAGEMENT.UpdateTable(3,6,true);
         table3 = MANAGEMENT.GetTable(3);
         assertEq(table3.numPeople,6,"should be equal");
+        Table[] memory tablesUpdate = MANAGEMENT.GetAllTables();
+        assertEq(tablesUpdate[2].numPeople,6,"should be equal");
         vm.stopPrank();
     }
     function SetUpCategory()public {
@@ -116,6 +216,18 @@ contract RestaurantTest is Test {
             imgUrl:"_imgURL1"
         });
         MANAGEMENT.CreateCategory(category1);
+        bytes memory bytesCodeCall = abi.encodeCall(
+            MANAGEMENT.CreateCategory,
+            (
+               category1
+            )
+        );
+        console.log("CreateCategory 1:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
+
         Category memory category2 = Category({
             code:"THITGA",
             name:"thit ga",
@@ -125,15 +237,63 @@ contract RestaurantTest is Test {
             imgUrl:"_imgURL2"
         });
         MANAGEMENT.CreateCategory(category2);
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.CreateCategory,
+        //     (
+        //        category2
+        //     )
+        // );
+        // console.log("CreateCategory 2:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
         Category[] memory categories = MANAGEMENT.GetCategories();
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.CreateCategory,
+        //     (
+        //        category2
+        //     )
+        // );
+        // console.log("GetCategories:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
         assertEq(categories.length,2,"should be equal");
         Category memory cat2 = MANAGEMENT.GetCategory("THITGA");
         assertEq(cat2.name,"thit ga","should be equal");
         assertEq(cat2.imgUrl,"_imgURL2","should be equal");
         MANAGEMENT.UpdateCategory("THITGA","thit ga ta",1,"Cac mon voi thit ga",true,"_imgURL3");
         cat2 = MANAGEMENT.GetCategory("THITGA");
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.UpdateCategory,
+        //     (
+        //        "THITBO","thit bo my",1,"Cac mon voi thit bo my",true,"_imgURL3"
+        //     )
+        // );
+        // console.log("UpdateCategory :");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // ); 
+        // bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.GetCategory,
+        //     (
+        //        "THITBO"
+        //     )
+        // );
+        // console.log("GetCategory :");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
         assertEq(cat2.name,"thit ga ta","should be equal");
         assertEq(cat2.imgUrl,"_imgURL3","should be equal");
+        Category[] memory categoriesUpdate = MANAGEMENT.GetCategories();
+        assertEq(categoriesUpdate[1].name,"thit ga ta","should be equal");
+        assertEq(categoriesUpdate[1].imgUrl,"_imgURL3","should be equal");
+
         vm.stopPrank();
     }
     function SetUpDish()public {
@@ -170,8 +330,43 @@ contract RestaurantTest is Test {
         });
 
         MANAGEMENT.CreateDish("THITBO",dish1,1000);
+        bytes memory bytesCodeCall = abi.encodeCall(
+            MANAGEMENT.CreateDish,
+            (
+               "THITBO",dish1,1000
+            )
+        );
+        console.log("CreateDish 1:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
         MANAGEMENT.CreateDish("THITBO",dish2,200);
+        bytesCodeCall = abi.encodeCall(
+            MANAGEMENT.CreateDish,
+            (
+               "THITBO",dish2,200
+            )
+        );
+        console.log("CreateDish 2:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
+
         MANAGEMENT.CreateDish("THITGA",dish3,500);
+        bytesCodeCall = abi.encodeCall(
+            MANAGEMENT.CreateDish,
+            (
+               "THITGA",dish3,500
+            )
+        );
+        console.log("CreateDish 3:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
+
         Dish[] memory dishes = MANAGEMENT.GetDishes("THITBO");
         assertEq(dishes.length,2,"should be equal");
         Dish memory dish = MANAGEMENT.GetDish("B002");
@@ -192,6 +387,11 @@ contract RestaurantTest is Test {
         assertEq(dish.name,"Bo xong khoi","should be equal");
         assertEq(dish.price,200 * ONE_USDT,"should be equal");
         assertEq(dish.available,true,"should be equal");
+        Dish[] memory dishesUpdate = MANAGEMENT.GetDishes("THITBO");
+        assertEq(dishesUpdate[1].name,"Bo xong khoi","should be equal");
+        assertEq(dishesUpdate[1].price,200 * ONE_USDT,"should be equal");
+        assertEq(dishesUpdate[1].available,true,"should be equal");
+
         vm.stopPrank();
         vm.startPrank(staff1);
         MANAGEMENT.UpdateDishStatus("THITBO","B002",false);
@@ -216,6 +416,26 @@ contract RestaurantTest is Test {
             "_imgIRL",
             100
         );
+        // bytes memory bytesCodeCall = abi.encodeCall(
+        //     MANAGEMENT.CreateDiscount,
+        //     (
+        //         "KM20",
+        //         "Chuong trinh kmai mua thu",
+        //         20,
+        //         "Kmai giam 15% tren tong chi phi",
+        //         1730079957,    //8.46am 28/10/2024
+        //         1730079957 + 365 days,
+        //         true,
+        //         "_imgIRL",
+        //         100           
+        //     )
+        // );
+        // console.log("CreateDiscount:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
+
         Discount memory discount = MANAGEMENT.GetDiscount("KM20");
         assertEq(discount.amountMax,100,"should be equal");
         MANAGEMENT.UpdateDiscount(
@@ -233,6 +453,8 @@ contract RestaurantTest is Test {
         assertEq(discount.amountMax,200,"should be equal");
         Discount[] memory discounts = MANAGEMENT.GetAllDiscounts();
         assertEq(discounts.length,1,"should be equal");
+        assertEq(discounts[0].amountMax,200,"should be equal");
+        assertEq(discounts[0].discountPercent,20,"should be equal");
         vm.stopPrank();
     }
     function testMakeOrder()public{
@@ -260,6 +482,18 @@ contract RestaurantTest is Test {
             1,
             inputT1
         );
+        bytes memory bytesCodeCall = abi.encodeCall(
+            ORDER.MakeOrder,
+            (
+                1,
+                inputT1  
+            )
+        );
+        console.log("MakeOrder 1 table 1:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
 
         //order lan 2 table1
         inputT1 = new OrderInput[](1);
@@ -273,7 +507,18 @@ contract RestaurantTest is Test {
             1,
             inputT1
         );
-
+        // bytesCodeCall = abi.encodeCall(
+        //     ORDER.MakeOrder,
+        //     (
+        //         1,
+        //         inputT1  
+        //     )
+        // );
+        // console.log("MakeOrder 2 table 1:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
         //order lan 1 table2
         OrderInput[] memory inputT2 = new OrderInput[](1);
         OrderInput memory inputB3 = OrderInput({
@@ -305,6 +550,15 @@ contract RestaurantTest is Test {
         Order[] memory orders2 = ORDER.GetOrders(2);
         assertEq(orders2.length,1,"should be equal");
         Order[] memory allOrders = ORDER.GetAllOrders();
+        bytesCodeCall = abi.encodeCall(
+            ORDER.GetAllOrders,()
+        );
+        console.log("GetAllOrders:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
+
         assertEq(allOrders.length,4,"should be equal");
 
         //get courses
@@ -329,6 +583,18 @@ contract RestaurantTest is Test {
         uint[] memory updateQuantities = new uint[](1);
         updateQuantities[0]  = 3;
         ORDER.UpdateOrder(1,orderId1T1,updateCourseIds,updateQuantities);
+        // bytesCodeCall = abi.encodeCall(
+        //     ORDER.UpdateOrder,
+        //     (
+        //         1,orderId1T1,updateCourseIds,updateQuantities
+        //     )
+        // );
+        // console.log("UpdateOrder table 1 order 1:");
+        // console.logBytes(bytesCodeCall);
+        // console.log(
+        //     "-----------------------------------------------------------------------------"
+        // );  
+
         course = ORDER.GetCourseByTableAndIdCourse(1,1);
         assertEq(course.quantity, 3);
         coursesByOrder1 = ORDER.GetCoursesByOrderId(orderId1T1);
@@ -355,6 +621,17 @@ contract RestaurantTest is Test {
         uint paymentAmount1 = foodCharge*80/100 +tax+ tip;
         assertEq(USDT_ERC.balanceOf(address(MONEY_POOL)),paymentAmount1);
         vm.stopPrank();
+        bytesCodeCall = abi.encodeCall(
+            ORDER.PayUSDT,
+            (
+                1,"KM20",tip
+            )
+        );
+        console.log("PayUSDT table 1:");
+        console.logBytes(bytesCodeCall);
+        console.log(
+            "-----------------------------------------------------------------------------"
+        );  
 
         //pay by visa table 2
         vm.startPrank(pos);

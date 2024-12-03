@@ -27,7 +27,7 @@ build:
 unit-test:
 	clear && forge test -vvv
 
-unit-res:
+res:
 	clear && forge test --match-path test/res.t.sol --via-ir -vvv
 
 
